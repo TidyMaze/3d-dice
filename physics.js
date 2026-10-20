@@ -74,7 +74,7 @@ export function createPhysics({ onImpact } = {}) {
     const x = f * Math.min(12, count * 2.5);
     body.position.set(x + rand(-0.3, 0.3), rand(3, 5), rand(5, 6.3));
     body.quaternion.setFromEuler(rand(0, Math.PI * 2), rand(0, Math.PI * 2), rand(0, Math.PI * 2));
-    body.velocity.set(-x * 0.4 + rand(-3, 3), rand(-2, 2), -rand(12, 20));
+    body.velocity.set(-x * 0.4 + rand(-3, 3), rand(-2, 2), -rand(7, 12)); // lands mid-table, not piled on the far wall
     body.angularVelocity.set(rand(-25, 25), rand(-25, 25), rand(-25, 25));
     body.force.setZero();
     body.torque.setZero();
@@ -83,7 +83,23 @@ export function createPhysics({ onImpact } = {}) {
 
   const step = (dt) => world.step(1 / 120, dt, 5);
 
-  const allAsleep = () => [...dice].every((b) => b.sleepState === CANNON.Body.SLEEPING);
+  // held dice are kinematic: they stay put and push thrown dice away without moving
+  const allAsleep = () => [...dice].every((b) => b.type !== CANNON.Body.DYNAMIC || b.sleepState === CANNON.Body.SLEEPING);
 
-  return { world, addDie, removeDie, throwDie, step, allAsleep };
+  function setHeld(body, held) {
+    body.type = held ? CANNON.Body.KINEMATIC : CANNON.Body.DYNAMIC;
+    body.velocity.setZero();
+    body.angularVelocity.setZero();
+    body.updateMassProperties();
+    if (!held) body.wakeUp();
+  }
+
+  // small hop for a die resting on an edge
+  function nudge(body) {
+    body.wakeUp();
+    body.velocity.set(rand(-1.5, 1.5), rand(4, 6), rand(-1.5, 1.5));
+    body.angularVelocity.set(rand(-8, 8), rand(-8, 8), rand(-8, 8));
+  }
+
+  return { world, addDie, removeDie, throwDie, step, allAsleep, setHeld, nudge };
 }

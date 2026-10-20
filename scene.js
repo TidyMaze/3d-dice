@@ -76,7 +76,7 @@ export function createScene(container) {
 
   // camera: ~55 deg above the table
   const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
-  camera.position.set(0, 18, 12.6);
+  camera.position.set(0, 15, 10.5);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(0, 0, 0);
   controls.enableDamping = true;
@@ -134,10 +134,16 @@ export function createScene(container) {
   floor.receiveShadow = true;
   scene.add(floor);
 
+  // portrait screens look along the table's long side; back off until its width (17 units + rim) fits
   function setSize(wd, ht) {
     renderer.setSize(wd, ht);
     camera.aspect = wd / ht;
     camera.updateProjectionMatrix();
+    const halfH = Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect);
+    const dist = Math.min(controls.maxDistance, Math.max(18.3, 9 / Math.tan(halfH)));
+    const dir = camera.aspect < 1 ? new THREE.Vector3(0.574, 0.819, 0) : new THREE.Vector3(0, 0.819, 0.574);
+    camera.position.copy(dir.multiplyScalar(dist));
+    controls.update();
   }
   setSize(container.clientWidth || window.innerWidth, container.clientHeight || window.innerHeight);
 

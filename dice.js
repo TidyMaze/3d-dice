@@ -215,16 +215,19 @@ export function createDie(type, { color = '#b3121f', inkColor = '#f5f0e6', size 
   const mesh = new THREE.Mesh(geometry, mat);
   mesh.castShadow = mesh.receiveShadow = true;
   const qt = new THREE.Quaternion(), tmp = new THREE.Vector3();
-  const readValue = (q) => {
+  // [value, how straight it points up]: 1 = flat on the table, lower = cocked against a wall or die
+  const top = (q) => {
     qt.set(q.x, q.y, q.z, q.w);
     let best = -2, value = 0;
     for (const r of reads) {
       const y = tmp.copy(r.n).applyQuaternion(qt).y;
       if (y > best) [best, value] = [y, r.value];
     }
-    return value;
+    return [value, best];
   };
-  return { type, mesh, shape, mass: size ** 3, readValue, reads };
+  const readValue = (q) => top(q)[0];
+  const upDot = (q) => top(q)[1];
+  return { type, mesh, shape, mass: size ** 3, readValue, upDot, reads };
 }
 
 // every face up must read its own value, values must be exactly 1..N
